@@ -26,7 +26,11 @@ if [ -z "$env" ] && [ -f '.env' ]; then
   env=$(grep -E "^APP_ENV=(.*)" ".env" | cut -d "=" -f 2)
 fi
 
-dotEnvs=".env .env.local .env.${env} .env.${env}.local"
+dotEnvs=".env .env.local"
+
+if [ -n "$env" ]; then
+  dotEnvs="$dotEnvs .env.${env} .env.${env}.local"
+fi
 
 echo "# ENV (${env}) MERGED" >"$output"
 
