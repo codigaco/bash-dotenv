@@ -1,35 +1,41 @@
 #!/bin/sh
 
 output=".env.output"
-envName=""
+env=""
 
-if [ "$1" ]; then
-  output="$1"
+while getopts ":o:e:" option; do
+  case $option in
+  o)
+    output=$OPTARG
+    ;;
+  e)
+    env=$OPTARG
+    ;;
+  *)
+    echo "Error: Invalid option"
+    exit
+    ;;
+  esac
+done
+
+if [ -z "$env" ] && [ -f '.env.local' ]; then
+  env=$(grep -E "^APP_ENV=(.*)" ".env.local" | cut -d "=" -f 2)
 fi
 
-if [ "$2" ]; then
-  envName="$2"
+if [ -z "$env" ] && [ -f '.env' ]; then
+  env=$(grep -E "^APP_ENV=(.*)" ".env" | cut -d "=" -f 2)
 fi
 
-if [ -z "$envName" ] && [ -f '.env.local' ]; then
-  envName=$(grep -E  "^APP_ENV=(.*)" ".env.local" | cut -d "=" -f 2)
-fi
+dotEnvs=".env .env.local .env.${env} .env.${env}.local"
 
-if [ -z "$envName" ] && [ -f '.env' ]; then
-  envName=$(grep -E  "^APP_ENV=(.*)" ".env" | cut -d "=" -f 2)
-fi
-
-dotEnvs=".env .env.local .env.${envName} .env.${envName}.local"
-
-echo "# ENV (${envName}) MERGED" > "$output"
+echo "# ENV (${env}) MERGED" >"$output"
 
 readEnvVariables() {
   if [ ! -f "$1" ]; then
     return
   fi
 
-  while read -r line;
-  do
+  while read -r line; do
     if [ -z "${line%%#*}" ]; then
       continue
     fi
@@ -41,10 +47,10 @@ readEnvVariables() {
       continue
     fi
 
-    echo "$line" >> "$output";
-  done < "$1"
+    echo "$line" >>"$output"
+  done <"$1"
 }
 
-for env in ${dotEnvs}; do
-  readEnvVariables "${env}";
+for dotEnv in ${dotEnvs}; do
+  readEnvVariables "${dotEnv}"
 done
