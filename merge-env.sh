@@ -1,7 +1,7 @@
 #!/bin/sh
 
 output=".env.output"
-envName="dev"
+envName=""
 
 if [ "$1" ]; then
   output="$1"
@@ -11,7 +11,15 @@ if [ "$2" ]; then
   envName="$2"
 fi
 
-ENVS=".env .env.local .env.${envName} .env.${envName}.local"
+if [ -z "$envName" ] && [ -f '.env.local' ]; then
+  envName=$(grep -E  "^APP_ENV=(.*)" ".env.local" | cut -d "=" -f 2)
+fi
+
+if [ -z "$envName" ] && [ -f '.env' ]; then
+  envName=$(grep -E  "^APP_ENV=(.*)" ".env" | cut -d "=" -f 2)
+fi
+
+dotEnvs=".env .env.local .env.${envName} .env.${envName}.local"
 
 echo "# ENV (${envName}) MERGED" > "$output"
 
@@ -37,7 +45,6 @@ readEnvVariables() {
   done < "$1"
 }
 
-for env in ${ENVS}; do
-#  printf "${env} \n"
+for env in ${dotEnvs}; do
   readEnvVariables "${env}";
 done
